@@ -1,5 +1,15 @@
 #!/bin/bash
 
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+bblue='\033[0;34m'
+plain='\033[0m'
+red(){ echo -e "\033[31m\033[01m$1\033[0m";}
+green(){ echo -e "\033[32m\033[01m$1\033[0m";}
+yellow(){ echo -e "\033[33m\033[01m$1\033[0m";}
+blue(){ echo -e "\033[36m\033[01m$1\033[0m";}
+white(){ echo -e "\033[37m\033[01m$1\033[0m";}
 red='\e[91m'
 green='\e[92m'
 yellow='\e[93m'
@@ -983,6 +993,59 @@ uninstall() {
 
 }
 
+check() {
+vi=`systemd-detect-virt`
+if [[ $vi = openvz ]]; then
+TUN=$(cat /dev/net/tun 2>&1)
+if [[ ! $TUN =~ 'in bad state' ]] && [[ ! $TUN =~ '处于错误状态' ]] && [[ ! $TUN =~ 'Die Dateizugriffsnummer ist in schlechter Verfassung' ]]; then 
+red "检测到未开启TUN，现尝试添加TUN支持" && sleep 2
+cd /dev
+mkdir net
+mknod net/tun c 10 200
+chmod 0666 net/tun
+TUN=$(cat /dev/net/tun 2>&1)
+if [[ ! $TUN =~ 'in bad state' ]] && [[ ! $TUN =~ '处于错误状态' ]] && [[ ! $TUN =~ 'Die Dateizugriffsnummer ist in schlechter Verfassung' ]]; then
+green "添加TUN支持失败，建议与VPS厂商沟通或后台设置开启" && exit 0
+else
+green "恭喜，添加TUN支持成功，现执行重启VPS自动开启TUN守护功能" && sleep 2
+cat>/root/tun.sh<<-\EOF
+#!/bin/bash
+cd /dev
+mkdir net
+mknod net/tun c 10 200
+chmod 0666 net/tun
+EOF
+chmod +x /root/tun.sh
+grep -qE "^ *@reboot root bash /root/tun.sh >/dev/null 2>&1" /etc/crontab || echo "@reboot root bash /root/tun.sh >/dev/null 2>&1" >> /etc/crontab
+green "重启VPS自动开启TUN守护功能已启动"
+fi
+fi
+fi
+echo -e "${green}关闭防火墙，开放所有端口规则……${plain}"
+sleep 1
+systemctl stop firewalld.service >/dev/null 2>&1
+systemctl disable firewalld.service >/dev/null 2>&1
+setenforce 0 >/dev/null 2>&1
+ufw disable >/dev/null 2>&1
+iptables -P INPUT ACCEPT >/dev/null 2>&1
+iptables -P FORWARD ACCEPT >/dev/null 2>&1
+iptables -P OUTPUT ACCEPT >/dev/null 2>&1
+iptables -t nat -F >/dev/null 2>&1
+iptables -t mangle -F >/dev/null 2>&1
+iptables -F >/dev/null 2>&1
+iptables -X >/dev/null 2>&1
+netfilter-persistent save >/dev/null 2>&1
+if [[ -z $(grep 'DiG 9' /etc/hosts) ]]; then
+v4=$(curl -s4m3 https://ip.gs -k)
+if [ -z $v4 ]; then
+echo -e "${green}检测到VPS为纯IPV6 Only,添加dns64${plain}\n"
+echo -e nameserver 2a01:4f8:c2c:123f::1 > /etc/resolv.conf
+fi
+fi
+systemctl stop apache2 >/dev/null 2>&1
+systemctl disable apache2 >/dev/null 2>&1
+}
+
 args=$1
 _gitbranch=$2
 [ -z $1 ] && args="online"
@@ -1028,6 +1091,7 @@ while :; do
 	read -p "$(echo -e "请选择 [${magenta}1-2$none]:")" choose
 	case $choose in
 	1)
+	        check
 		install
 		break
 		;;
