@@ -746,27 +746,22 @@ install_info() {
 }
 
 domain_check() {
-	# if [[ $cmd == "yum" ]]; then
-	# 	yum install bind-utils -y
-	# else
-	# 	$cmd install dnsutils -y
-	# fi
-	# test_domain=$(dig $domain +short)
-	# test_domain=$(ping $domain -c 1 -4 | grep -oE -m1 "([0-9]{1,3}\.){3}[0-9]{1,3}")
-	# test_domain=$(wget -qO- --header='accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$domain&type=A" | grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -1)
-	test_domain=$(curl -sH 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=$domain&type=A" | grep -oE "([0-9]{1,3}\.){3}[0-9]{1,3}" | head -1)
-	if [[ $test_domain != $ip ]]; then
-		echo
-		echo -e "$red 检测域名解析错误....$none"
-		echo
-		echo -e " 你的域名: $yellow$domain$none 未解析到: $cyan$ip$none"
-		echo
-		echo -e " 你的域名当前解析到: $cyan$test_domain$none"
-		echo
-		echo "备注...如果你的域名是使用 Cloudflare 解析的话..在 Status 那里点一下那图标..让它变灰"
-		echo
-		exit 1
-	fi
+domainIP=$(curl -s ipget.net/?ip="$ym")	
+if [[ -n $(echo $domainIP | grep nginx) ]]; then
+yellow "当前域名解析到的IP：无"
+red "域名解析无效，请检查域名是否填写正确或稍等几分钟等待解析完成再执行脚本" && rm -rf acme.sh && exit 1
+elif [[ -n $(echo $domainIP | grep ":") || -n $(echo $domainIP | grep ".") ]]; then
+if [[ $domainIP != $v4 ]] && [[ $domainIP != $v6 ]]; then
+yellow "当前域名解析到的IP：$domainIP"
+red "当前域名解析的IP与当前VPS使用的IP不匹配"
+green "建议如下："
+yellow "1、请确保CDN小黄云关闭状态(仅限DNS)，其他域名解析网站设置同理"
+yellow "2、请检查域名解析网站设置的IP是否正确"
+rm -rf acme.sh && exit 1
+else
+green "恭喜，域名解析正确，当前域名解析到的IP：$domainIP"
+fi
+fi
 }
 
 install_caddy() {
