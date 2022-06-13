@@ -746,10 +746,12 @@ install_info() {
 }
 
 domain_check() {
-domainIP=$(curl -s ipget.net/?ip="$ym")	
+v6=$(curl -s6m3 https://ip.gs -k)
+v4=$(curl -s4m3 https://ip.gs -k)
+domainIP=$(curl -s ipget.net/?ip="$domain")	
 if [[ -n $(echo $domainIP | grep nginx) ]]; then
 yellow "当前域名解析到的IP：无"
-red "域名解析无效，请检查域名是否填写正确或稍等几分钟等待解析完成再执行脚本" && rm -rf acme.sh && exit 1
+red "域名解析无效，请检查域名是否填写正确或稍等几分钟等待解析完成再执行脚本" && exit 1
 elif [[ -n $(echo $domainIP | grep ":") || -n $(echo $domainIP | grep ".") ]]; then
 if [[ $domainIP != $v4 ]] && [[ $domainIP != $v6 ]]; then
 yellow "当前域名解析到的IP：$domainIP"
@@ -757,7 +759,7 @@ red "当前域名解析的IP与当前VPS使用的IP不匹配"
 green "建议如下："
 yellow "1、请确保CDN小黄云关闭状态(仅限DNS)，其他域名解析网站设置同理"
 yellow "2、请检查域名解析网站设置的IP是否正确"
-rm -rf acme.sh && exit 1
+exit 1
 else
 green "恭喜，域名解析正确，当前域名解析到的IP：$domainIP"
 fi
