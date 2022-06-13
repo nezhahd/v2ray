@@ -347,7 +347,15 @@ tls_config() {
 		echo "----------------------------------------------------------------"
 		break
 	done
-	get_ip
+wgcfv6=$(curl -s6m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+wgcfv4=$(curl -s4m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
+get_ip
+else
+systemctl stop wg-quick@wgcf >/dev/null 2>&1
+get_ip
+systemctl start wg-quick@wgcf >/dev/null 2>&1
+fi
 	echo
 	echo
 	echo -e "$yellow 请将 $magenta$domain$none $yellow 解析到: $cyan$ip$none"
