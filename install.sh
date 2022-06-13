@@ -347,15 +347,8 @@ tls_config() {
 		echo "----------------------------------------------------------------"
 		break
 	done
-wgcfv6=$(curl -s6m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-wgcfv4=$(curl -s4m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
-if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
-get_ip
-else
-systemctl stop wg-quick@wgcf >/dev/null 2>&1
-get_ip
-systemctl start wg-quick@wgcf >/dev/null 2>&1
-fi
+
+        get_ip
 	echo
 	echo
 	echo -e "$yellow 请将 $magenta$domain$none $yellow 解析到: $cyan$ip$none"
@@ -1044,6 +1037,18 @@ systemctl stop apache2 >/dev/null 2>&1
 systemctl disable apache2 >/dev/null 2>&1
 }
 
+wgcheck(){
+wgcfv6=$(curl -s6m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+wgcfv4=$(curl -s4m6 https://www.cloudflare.com/cdn-cgi/trace -k | grep warp | cut -d= -f2)
+if [[ ! $wgcfv4 =~ on|plus && ! $wgcfv6 =~ on|plus ]]; then
+install
+else
+systemctl stop wg-quick@wgcf >/dev/null 2>&1
+install
+systemctl start wg-quick@wgcf >/dev/null 2>&1
+fi
+}
+
 args=$1
 _gitbranch=$2
 [ -z $1 ] && args="online"
@@ -1090,7 +1095,7 @@ while :; do
 	case $choose in
 	1)
 	        check
-		install
+		wgcheck
 		break
 		;;
 	2)
