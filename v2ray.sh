@@ -2374,11 +2374,7 @@ update_v2ray() {
 	_update_v2ray_version
 }
 update_v2ray.sh() {
-	if [[ $_test ]]; then
-		local latest_version=$(curl -H 'Cache-Control: no-cache' -s -L "https://raw.githubusercontent.com/233boy/v2ray/test/v2ray.sh" | grep '_version' -m1 | cut -d\" -f2)
-	else
-		local latest_version=$(curl -H 'Cache-Control: no-cache' -s -L "https://raw.githubusercontent.com/233boy/v2ray/master/v2ray.sh" | grep '_version' -m1 | cut -d\" -f2)
-	fi
+		local latest_version=$(curl -H 'Cache-Control: no-cache' -s -L "https://gitlab.com/rwkgyg/v2ray/raw/master/v2ray.sh" | grep '_version' -m1 | cut -d\" -f2)
 
 	if [[ ! $latest_version ]]; then
 		echo
